@@ -79,6 +79,16 @@
                         <i class="bi bi-plus-circle"></i> Создать
                     </button>
                 </div>
+                <div class="col-md-3">
+                    <label class="form-label">Роли</label>
+                    <select name="roleIds" class="form-select" multiple size="2">
+                        <option th:each="role : ${allRoles}"
+                                th:value="${role.id}"
+                                th:text="${role.name.replace('ROLE_', '')}">
+                        </option>
+                    </select>
+                    <div class="form-text">Удерживайте CTRL для выбора нескольких ролей</div>
+                </div>
             </form>
         </div>
     </div>

@@ -5,10 +5,13 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import ru.kata.spring.boot_security.demo.MODEL.Role;
 import ru.kata.spring.boot_security.demo.MODEL.User;
 import ru.kata.spring.boot_security.demo.SERVICE.UserService;
 
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Controller
 @RequestMapping("/admin")
@@ -55,20 +58,19 @@ public class AdminController {
     }
 
     @PostMapping("/create")
-    public String createUser(@ModelAttribute User user, RedirectAttributes redirectAttributes) {
+    public String createUser(@ModelAttribute User user,
+                             @RequestParam(value = "roleIds", required = false) List<Long> roleIds,
+                             RedirectAttributes redirectAttributes) {
         try {
-            if (userService.existsByUsername(user.getUsername())) {
-                redirectAttributes.addFlashAttribute("errorMessage",
-                        "User with username '" + user.getUsername() + "' already exists");
-                return "redirect:/admin/create";
-            }
+            Set<Role> roles = (roleIds != null) ? roleIds.stream()
+                    .map(id -> userService.getAllRoles().stream()
+                            .filter(r -> r.getId().equals(id))
+                            .findFirst()
+                            .orElseThrow())
+                    .collect(Collectors.toSet())
+                    : Set.of(userService.findRoleByName("ROLE_USER").orElseThrow());
 
-            if (userService.existsByEmail(user.getEmail())) {
-                redirectAttributes.addFlashAttribute("errorMessage",
-                        "User with email '" + user.getEmail() + "' already exists");
-                return "redirect:/admin/create";
-            }
-
+            user.setRoles(roles);
             userService.saveUser(user);
             redirectAttributes.addAttribute("success", "User created successfully!");
         } catch (Exception e) {
@@ -134,21 +136,21 @@ public class AdminController {
         return "redirect:/admin";
     }
 
+
     @PostMapping("/quick-create")
-    public String quickCreateUser(@ModelAttribute User user, RedirectAttributes redirectAttributes) {
+    public String quickCreateUser(@ModelAttribute User user,
+                                  @RequestParam(value = "roleIds", required = false) List<Long> roleIds,
+                                  RedirectAttributes redirectAttributes) {
         try {
-            if (userService.existsByUsername(user.getUsername())) {
-                redirectAttributes.addAttribute("error",
-                        "User with username '" + user.getUsername() + "' already exists");
-                return "redirect:/admin";
-            }
+            Set<Role> roles = (roleIds != null) ? roleIds.stream()
+                    .map(id -> userService.getAllRoles().stream()
+                            .filter(r -> r.getId().equals(id))
+                            .findFirst()
+                            .orElseThrow())
+                    .collect(Collectors.toSet())
+                    : Set.of(userService.findRoleByName("ROLE_USER").orElseThrow());
 
-            if (userService.existsByEmail(user.getEmail())) {
-                redirectAttributes.addAttribute("error",
-                        "User with email '" + user.getEmail() + "' already exists");
-                return "redirect:/admin";
-            }
-
+            user.setRoles(roles);
             userService.saveUser(user);
             redirectAttributes.addAttribute("success", "User created successfully!");
         } catch (Exception e) {
