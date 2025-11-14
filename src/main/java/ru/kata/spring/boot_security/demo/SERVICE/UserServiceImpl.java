@@ -16,45 +16,82 @@ import java.util.Optional;
 import java.util.Set;
 
 @Service
-@Transactional(readOnly = true) // По умолчанию все методы readOnly = true
 public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
 
-    @Autowired
-    public UserServiceImpl(UserRepository userRepository, RoleRepository roleRepository, PasswordEncoder passwordEncoder) {
+    public UserServiceImpl(UserRepository userRepository,
+                           RoleRepository roleRepository,
+                           PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
+    // ---------------------- READ METHODS ----------------------
+
     @Override
+    @Transactional(readOnly = true)
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         return userRepository.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<User> getAllUsers() {
-        return userRepository.findAll(); // readOnly = true по классу
+        return userRepository.findAll();
     }
 
     @Override
+    @Transactional(readOnly = true)
     public User getUserById(Long id) {
         return userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Optional<User> findByEmail(String email) {
         return userRepository.findByEmail(email);
     }
 
-    // ------------------------- Методы записи -------------------------
     @Override
-    @Transactional // переопределяет readOnly = true с класса, теперь readOnly = false
+    @Transactional(readOnly = true)
+    public List<Role> getAllRoles() {
+        return roleRepository.findAll();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<Role> findRoleByName(String name) {
+        return roleRepository.findByName(name);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean existsByUsername(String username) {
+        return userRepository.findByUsername(username).isPresent();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean existsByEmail(String email) {
+        return userRepository.findByEmail(email).isPresent();
+    }
+
+    @Override
+    public User findByUsername(String username) {
+        return null;
+    }
+
+
+    // ---------------------- WRITE METHODS ----------------------
+
+    @Override
+    @Transactional
     public User saveUser(User user) {
         if (user.getId() == null || !user.getPassword().startsWith("$2a$")) {
             user.setPassword(passwordEncoder.encode(user.getPassword()));
@@ -80,6 +117,7 @@ public class UserServiceImpl implements UserService {
         if (updatedUser.getPassword() != null &&
                 !updatedUser.getPassword().isEmpty() &&
                 !updatedUser.getPassword().startsWith("$2a$")) {
+
             existingUser.setPassword(passwordEncoder.encode(updatedUser.getPassword()));
         }
 
@@ -97,34 +135,9 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public List<Role> getAllRoles() {
-        return roleRepository.findAll(); // readOnly = true по классу
-    }
-
-    @Override
-    public Optional<Role> findRoleByName(String name) {
-        return roleRepository.findByName(name);
-    }
-
-    @Override
     @Transactional
     public Role createRole(String name) {
         Role role = new Role(name);
         return roleRepository.save(role);
-    }
-
-    @Override
-    public boolean existsByUsername(String username) {
-        return userRepository.findByUsername(username).isPresent();
-    }
-
-    @Override
-    public boolean existsByEmail(String email) {
-        return userRepository.findByEmail(email).isPresent();
-    }
-
-    @Override
-    public User findByUsername(String username) {
-        return null;
     }
 }
